@@ -191,6 +191,15 @@ def _top_level_dir(path: str) -> str:
     return path.split("/")[0] if "/" in path else path
 
 
+def _should_suppress_structural(conf: str, relation: str, u_source: str, v_source: str, cat_u: str, cat_v: str) -> bool:
+    """Determine if structural bonuses should be suppressed for an edge."""
+    return (
+        conf == "INFERRED"
+        and relation in ("calls", "uses")
+        and (_cross_language(u_source, v_source) or {cat_u, cat_v} == {"code", "doc"})
+    )
+
+
 def _surprise_score(
     G: nx.Graph,
     u: str,
@@ -219,11 +228,7 @@ def _surprise_score(
     # "calls" edges are extraction artefacts, not real architecture.
     # Excludes `semantically_similar_to` (genuine cross-boundary insight) and all
     # AMBIGUOUS/EXTRACTED edges (not from the resolver path).
-    _suppress_structural = (
-        conf == "INFERRED"
-        and relation in ("calls", "uses")
-        and (_cross_language(u_source, v_source) or {cat_u, cat_v} == {"code", "doc"})
-    )
+    _suppress_structural = _should_suppress_structural(conf, relation, u_source, v_source, cat_u, cat_v)
     if _suppress_structural:
         conf_bonus = 0
 
