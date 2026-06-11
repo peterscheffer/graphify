@@ -3798,7 +3798,7 @@ def main() -> None:
             from graphify.export import to_svg as _to_svg
             _to_svg(G, communities, str(out_dir / "graph.svg"),
                     community_labels=labels or None)
-            print(f"graph.svg written - embeds in Obsidian, Notion, GitHub READMEs")
+            print("graph.svg written - embeds in Obsidian, Notion, GitHub READMEs")
 
         elif subcmd == "graphml":
             from graphify.export import to_graphml as _to_graphml
