@@ -3762,7 +3762,7 @@ def main() -> None:
                 _to_html(G, communities, str(out_dir / "graph.html"),
                          community_labels=labels or None, node_limit=_effective_node_limit)
                 if G.number_of_nodes() <= _effective_node_limit:
-                    print(f"graph.html written - open in any browser, no server needed")
+                    print("graph.html written - open in any browser, no server needed")
                 if _over_cap:
                     sys.exit(0)
 
