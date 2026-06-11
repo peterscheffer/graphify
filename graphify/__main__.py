@@ -642,7 +642,7 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
         command_src = Path(__file__).parent / "command-kilo.md"
         if not command_src.exists():
             print(
-                f"error: command-kilo.md not found in package - reinstall graphify",
+                "error: command-kilo.md not found in package - reinstall graphify",
                 file=sys.stderr,
             )
             sys.exit(1)
