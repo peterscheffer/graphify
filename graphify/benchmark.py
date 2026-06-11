@@ -36,6 +36,25 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // _CHARS_PER_TOKEN)
 
 
+def _bfs_traversal(G: nx.Graph, start_nodes: list[str], depth: int) -> tuple[set[str], list[tuple]]:
+    """Perform BFS traversal and return visited nodes and edges seen."""
+    visited: set[str] = set(start_nodes)
+    frontier = set(start_nodes)
+    edges_seen: list[tuple] = []
+    
+    for _ in range(depth):
+        next_frontier: set[str] = set()
+        for n in frontier:
+            for neighbor in G.neighbors(n):
+                if neighbor not in visited:
+                    next_frontier.add(neighbor)
+                    edges_seen.append((n, neighbor))
+        visited.update(next_frontier)
+        frontier = next_frontier
+    
+    return visited, edges_seen
+
+
 def _query_subgraph_tokens(G: nx.Graph, question: str, depth: int = 3) -> int:
     """Run BFS from best-matching nodes and return estimated tokens in the subgraph context."""
     terms = _query_terms(question)
@@ -50,18 +69,7 @@ def _query_subgraph_tokens(G: nx.Graph, question: str, depth: int = 3) -> int:
     if not start_nodes:
         return 0
 
-    visited: set[str] = set(start_nodes)
-    frontier = set(start_nodes)
-    edges_seen: list[tuple] = []
-    for _ in range(depth):
-        next_frontier: set[str] = set()
-        for n in frontier:
-            for neighbor in G.neighbors(n):
-                if neighbor not in visited:
-                    next_frontier.add(neighbor)
-                    edges_seen.append((n, neighbor))
-        visited.update(next_frontier)
-        frontier = next_frontier
+    visited, edges_seen = _bfs_traversal(G, start_nodes, depth)
 
     lines = []
     for nid in visited:
