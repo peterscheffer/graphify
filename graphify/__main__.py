@@ -3803,7 +3803,7 @@ def main() -> None:
         elif subcmd == "graphml":
             from graphify.export import to_graphml as _to_graphml
             _to_graphml(G, communities, str(out_dir / "graph.graphml"))
-            print(f"graph.graphml written - open in Gephi, yEd, or any GraphML tool")
+            print("graph.graphml written - open in Gephi, yEd, or any GraphML tool")
 
         elif subcmd == "neo4j":
             if neo4j_uri:
