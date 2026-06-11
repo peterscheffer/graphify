@@ -3,13 +3,14 @@
 
 def __getattr__(name):
     # Lazy imports so `graphify install` works before heavy deps are in place.
+    CLUSTER_MODULE = "graphify.cluster"
     _map = {
         "extract": ("graphify.extract", "extract"),
         "collect_files": ("graphify.extract", "collect_files"),
         "build_from_json": ("graphify.build", "build_from_json"),
-        "cluster": ("graphify.cluster", "cluster"),
-        "score_all": ("graphify.cluster", "score_all"),
-        "cohesion_score": ("graphify.cluster", "cohesion_score"),
+        "cluster": (CLUSTER_MODULE, "cluster"),
+        "score_all": (CLUSTER_MODULE, "score_all"),
+        "cohesion_score": (CLUSTER_MODULE, "cohesion_score"),
         "god_nodes": ("graphify.analyze", "god_nodes"),
         "surprising_connections": ("graphify.analyze", "surprising_connections"),
         "suggest_questions": ("graphify.analyze", "suggest_questions"),
