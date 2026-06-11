@@ -265,6 +265,17 @@ def _surprise_score(
     return score, reasons
 
 
+def _should_skip_edge(G: nx.Graph, u: str, v: str, relation: str) -> bool:
+    """Check if an edge should be skipped in surprising connections."""
+    if relation in ("imports", "imports_from", "contains", "method"):
+        return True
+    if _is_concept_node(G, u) or _is_concept_node(G, v):
+        return True
+    if _is_file_node(G, u) or _is_file_node(G, v):
+        return True
+    return False
+
+
 def _cross_file_surprises(G: nx.Graph, communities: dict[int, list[str]], top_n: int) -> list[dict]:
     """
     Cross-file edges between real code/doc entities, ranked by a composite
@@ -285,11 +296,7 @@ def _cross_file_surprises(G: nx.Graph, communities: dict[int, list[str]], top_n:
 
     for u, v, data in G.edges(data=True):
         relation = data.get("relation", "")
-        if relation in ("imports", "imports_from", "contains", "method"):
-            continue
-        if _is_concept_node(G, u) or _is_concept_node(G, v):
-            continue
-        if _is_file_node(G, u) or _is_file_node(G, v):
+        if _should_skip_edge(G, u, v, relation):
             continue
 
         u_source = G.nodes[u].get("source_file", "")
