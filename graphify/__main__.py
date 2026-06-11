@@ -2672,7 +2672,7 @@ def main() -> None:
                 try:
                     budget = int(args[i + 1])
                 except ValueError:
-                    print(f"error: --budget must be an integer", file=sys.stderr)
+                    print("error: --budget must be an integer", file=sys.stderr)
                     sys.exit(1)
                 i += 2
             elif args[i].startswith("--budget="):
