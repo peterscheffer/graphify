@@ -2698,7 +2698,7 @@ def main() -> None:
             print(f"error: graph file not found: {gp}", file=sys.stderr)
             sys.exit(1)
         if not gp.suffix == ".json":
-            print(f"error: graph file must be a .json file", file=sys.stderr)
+            print("error: graph file must be a .json file", file=sys.stderr)
             sys.exit(1)
         _enforce_graph_size_cap_or_exit(gp)
         try:
