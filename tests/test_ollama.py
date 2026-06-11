@@ -58,6 +58,7 @@ def test_ollama_in_backends():
 def test_detect_backend_ollama(monkeypatch):
     monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False) 
     monkeypatch.setenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
     assert detect_backend() == "ollama"
 
