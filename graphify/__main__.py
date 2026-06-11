@@ -1966,7 +1966,7 @@ def _install_codebuddy_hook(project_dir: Path) -> None:
     hooks["PreToolUse"].append(_SETTINGS_HOOK)
     hooks["PreToolUse"].append(_READ_SETTINGS_HOOK)
     settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
-    print(f"  .codebuddy/settings.json  ->  PreToolUse hooks registered")
+    print("  .codebuddy/settings.json  ->  PreToolUse hooks registered")
 
 
 def _uninstall_codebuddy_hook(project_dir: Path) -> None:
