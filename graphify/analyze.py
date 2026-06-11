@@ -541,7 +541,7 @@ def suggest_questions(
     return questions[:top_n]
 
 
-def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
+def graph_diff(graph_old: nx.Graph, graph_new: nx.Graph) -> dict:
     """Compare two graph snapshots and return what changed.
 
     Returns:
@@ -553,18 +553,18 @@ def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
           "summary": "3 new nodes, 5 new edges, 1 node removed"
         }
     """
-    old_nodes = set(G_old.nodes())
-    new_nodes = set(G_new.nodes())
+    old_nodes = set(graph_old.nodes())
+    new_nodes = set(graph_new.nodes())
 
     added_node_ids = new_nodes - old_nodes
     removed_node_ids = old_nodes - new_nodes
 
     new_nodes_list = [
-        {"id": n, "label": G_new.nodes[n].get("label", n)}
+        {"id": n, "label": graph_new.nodes[n].get("label", n)}
         for n in added_node_ids
     ]
     removed_nodes_list = [
-        {"id": n, "label": G_old.nodes[n].get("label", n)}
+        {"id": n, "label": graph_old.nodes[n].get("label", n)}
         for n in removed_node_ids
     ]
 
@@ -574,20 +574,20 @@ def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
         return (min(u, v), max(u, v), data.get("relation", ""))
 
     old_edge_keys = {
-        edge_key(G_old, u, v, d)
-        for u, v, d in G_old.edges(data=True)
+        edge_key(graph_old, u, v, d)
+        for u, v, d in graph_old.edges(data=True)
     }
     new_edge_keys = {
-        edge_key(G_new, u, v, d)
-        for u, v, d in G_new.edges(data=True)
+        edge_key(graph_new, u, v, d)
+        for u, v, d in graph_new.edges(data=True)
     }
 
     added_edge_keys = new_edge_keys - old_edge_keys
     removed_edge_keys = old_edge_keys - new_edge_keys
 
     new_edges_list = []
-    for u, v, d in G_new.edges(data=True):
-        if edge_key(G_new, u, v, d) in added_edge_keys:
+    for u, v, d in graph_new.edges(data=True):
+        if edge_key(graph_new, u, v, d) in added_edge_keys:
             new_edges_list.append({
                 "source": u,
                 "target": v,
@@ -596,8 +596,8 @@ def graph_diff(G_old: nx.Graph, G_new: nx.Graph) -> dict:
             })
 
     removed_edges_list = []
-    for u, v, d in G_old.edges(data=True):
-        if edge_key(G_old, u, v, d) in removed_edge_keys:
+    for u, v, d in graph_old.edges(data=True):
+        if edge_key(graph_old, u, v, d) in removed_edge_keys:
             removed_edges_list.append({
                 "source": u,
                 "target": v,
