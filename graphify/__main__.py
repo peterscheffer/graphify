@@ -1984,7 +1984,7 @@ def _uninstall_codebuddy_hook(project_dir: Path) -> None:
         return
     settings["hooks"]["PreToolUse"] = filtered
     settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
-    print(f"  .codebuddy/settings.json  ->  PreToolUse hook removed")
+    print("  .codebuddy/settings.json  ->  PreToolUse hook removed")
 
 
 def codebuddy_uninstall(project_dir: Path | None = None, *, project: bool = False) -> None:
