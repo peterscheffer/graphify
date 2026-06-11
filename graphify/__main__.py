@@ -2270,7 +2270,7 @@ def main() -> None:
     # "install"/"uninstall" which have their own per-subcommand help handlers.
     _FREE_TEXT_CMDS = {"query", "explain", "path", "save-result", "install", "uninstall"}
     if cmd not in _FREE_TEXT_CMDS and any(a in {"-h", "--help", "-?"} for a in sys.argv[2:]):
-        print(f"Run 'graphify --help' for full usage.")
+        print("Run 'graphify --help' for full usage.")
         return
 
     if cmd == "install":
