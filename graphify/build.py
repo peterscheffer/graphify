@@ -365,6 +365,42 @@ def deduplicate_by_label(nodes: list[dict], edges: list[dict]) -> tuple[list[dic
     return deduped_nodes, deduped_edges
 
 
+def _build_prune_set(prune_sources: list[str] | None, root: str | Path | None) -> set[str]:
+    """Build a set containing both the raw form and the normalized relative form of paths to prune."""
+    prune_set: set[str] = set()
+    _root_str = str(Path(root).resolve()) if root is not None else None
+    for p in prune_sources:
+        if not p:
+            continue
+        prune_set.add(p)
+        norm = _norm_source_file(p, _root_str)
+        if norm:
+            prune_set.add(norm)
+    return prune_set
+
+
+def _prune_graph_nodes_and_edges(G: nx.Graph, prune_set: set[str]) -> tuple[int, int]:
+    """Prune nodes and edges from deleted source files and return counts."""
+    to_remove = [
+        n for n, d in G.nodes(data=True)
+        if d.get("source_file") in prune_set
+    ]
+    G.remove_nodes_from(to_remove)
+    n_nodes = len(to_remove)
+    
+    edges_to_remove = [
+        (u, v) for u, v, d in G.edges(data=True)
+        if d.get("source_file") in prune_set
+    ]
+    if edges_to_remove:
+        G.remove_edges_from(edges_to_remove)
+        n_edges = len(edges_to_remove)
+    else:
+        n_edges = 0
+    
+    return n_nodes, n_edges
+
+
 def build_merge(
     new_chunks: list[dict],
     graph_path: str | Path = "graphify-out/graph.json",
@@ -406,48 +442,24 @@ def build_merge(
 
     # Prune nodes and edges from deleted source files
     if prune_sources:
-        # Build a set containing both the raw form (matches nodes that kept
-        # absolute source_file) and the normalised relative form (matches nodes
-        # that were relativised by _norm_source_file at build time).
-        # .resolve() handles symlinked roots and redundant ".." / "./" segments
-        # so Path.relative_to() succeeds even when the scan root is a symlink.
-        # (#1007: manifest absolute paths vs graph relative source_file mismatch)
-        _root_str = str(Path(root).resolve()) if root is not None else None
-        prune_set: set[str] = set()
-        for p in prune_sources:
-            if not p:
-                continue
-            prune_set.add(p)
-            norm = _norm_source_file(p, _root_str)
-            if norm:
-                prune_set.add(norm)
-        to_remove = [
-            n for n, d in G.nodes(data=True)
-            if d.get("source_file") in prune_set
-        ]
-        G.remove_nodes_from(to_remove)
-        n_files = len(prune_sources)
-        n_nodes = len(to_remove)
+        prune_set = _build_prune_set(prune_sources, root)
+        n_nodes, n_edges = _prune_graph_nodes_and_edges(G, prune_set)
+        
         if n_nodes:
             print(
-                f"[graphify] Pruned {n_nodes} node(s) from {n_files} deleted source file(s).",
+                f"[graphify] Pruned {n_nodes} node(s) from {len(prune_sources)} deleted source file(s).",
                 file=sys.stderr,
             )
 
-        edges_to_remove = [
-            (u, v) for u, v, d in G.edges(data=True)
-            if d.get("source_file") in prune_set
-        ]
-        if edges_to_remove:
-            G.remove_edges_from(edges_to_remove)
+        if n_edges:
             print(
-                f"[graphify] Pruned {len(edges_to_remove)} edge(s) from deleted source file(s).",
+                f"[graphify] Pruned {n_edges} edge(s) from deleted source file(s).",
                 file=sys.stderr,
             )
 
-        if not n_nodes and not edges_to_remove:
+        if not n_nodes and not n_edges:
             print(
-                f"[graphify] {n_files} source file(s) deleted since last run — "
+                f"[graphify] {len(prune_sources)} source file(s) deleted since last run — "
                 f"no matching nodes or edges in graph, already clean.",
                 file=sys.stderr,
             )
