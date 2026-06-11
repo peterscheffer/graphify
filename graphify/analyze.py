@@ -416,24 +416,8 @@ def _cross_community_surprises(
     return deduped[:top_n]
 
 
-def suggest_questions(
-    G: nx.Graph,
-    communities: dict[int, list[str]],
-    community_labels: dict[int, str],
-    top_n: int = 7,
-) -> list[dict]:
-    """
-    Generate questions the graph is uniquely positioned to answer.
-    Based on: AMBIGUOUS edges, bridge nodes, underexplored god nodes, isolated nodes.
-    Each question has a 'type', 'question', and 'why' field.
-    """
-    if community_labels:
-        community_labels = {int(k) if isinstance(k, str) else k: v for k, v in community_labels.items()}
-
-    questions = []
-    node_community = _node_community_map(communities)
-
-    # 1. AMBIGUOUS edges → unresolved relationship questions
+def _handle_ambiguous_edges(G: nx.Graph, questions: list[dict]) -> None:
+    """Handle AMBIGUOUS edges for question generation."""
     for u, v, data in G.edges(data=True):
         if data.get("confidence") == "AMBIGUOUS":
             ul = G.nodes[u].get("label", u)
@@ -445,7 +429,9 @@ def suggest_questions(
                 "why": f"Edge tagged AMBIGUOUS (relation: {relation}) - confidence is low.",
             })
 
-    # 2. Bridge nodes (high betweenness) → cross-cutting concern questions
+
+def _handle_bridge_nodes(G: nx.Graph, communities: dict[int, list[str]], community_labels: dict[int, str], questions: list[dict]) -> None:
+    """Handle bridge nodes for question generation."""
     if G.number_of_edges() > 0:
         k = min(100, G.number_of_nodes()) if G.number_of_nodes() > 1000 else None
         betweenness = nx.betweenness_centrality(G, k=k, seed=42)
@@ -458,10 +444,10 @@ def suggest_questions(
         )[:3]
         for node_id, score in bridges:
             label = G.nodes[node_id].get("label", node_id)
-            cid = node_community.get(node_id)
+            cid = communities.get(node_id)
             comm_label = community_labels.get(cid, f"Community {cid}") if cid is not None else "unknown"
             neighbors = list(G.neighbors(node_id))
-            neighbor_comms = {node_community.get(n) for n in neighbors if node_community.get(n) != cid}
+            neighbor_comms = {communities.get(n) for n in neighbors if communities.get(n) != cid}
             if neighbor_comms:
                 other_labels = [community_labels.get(c, f"Community {c}") for c in neighbor_comms]
                 questions.append({
@@ -470,7 +456,9 @@ def suggest_questions(
                     "why": f"High betweenness centrality ({score:.3f}) - this node is a cross-community bridge.",
                 })
 
-    # 3. God nodes with many INFERRED edges → verification questions
+
+def _handle_god_nodes_inferred(G: nx.Graph, communities: dict[int, list[str]], questions: list[dict]) -> None:
+    """Handle god nodes with many INFERRED edges for question generation."""
     degree = dict(G.degree())
     top_nodes = sorted(
         [(n, d) for n, d in degree.items() if not _is_file_node(G, n)],
@@ -501,7 +489,9 @@ def suggest_questions(
                 "why": f"`{label}` has {len(inferred)} INFERRED edges - model-reasoned connections that need verification.",
             })
 
-    # 4. Isolated or weakly-connected nodes → exploration questions
+
+def _handle_isolated_nodes(G: nx.Graph, questions: list[dict]) -> None:
+    """Handle isolated or weakly-connected nodes for question generation."""
     isolated = [
         n for n in G.nodes()
         if G.degree(n) <= 1 and not _is_file_node(G, n) and not _is_concept_node(G, n)
@@ -514,7 +504,9 @@ def suggest_questions(
             "why": f"{len(isolated)} weakly-connected nodes found - possible documentation gaps or missing edges.",
         })
 
-    # 5. Low-cohesion communities → structural questions
+
+def _handle_low_cohesion_communities(G: nx.Graph, communities: dict[int, list[str]], community_labels: dict[int, str], questions: list[dict]) -> None:
+    """Handle low-cohesion communities for question generation."""
     from .cluster import cohesion_score
     for cid, nodes in communities.items():
         score = cohesion_score(G, nodes)
@@ -525,6 +517,39 @@ def suggest_questions(
                 "question": f"Should `{label}` be split into smaller, more focused modules?",
                 "why": f"Cohesion score {score} - nodes in this community are weakly interconnected.",
             })
+
+
+def suggest_questions(
+    G: nx.Graph,
+    communities: dict[int, list[str]],
+    community_labels: dict[int, str],
+    top_n: int = 7,
+) -> list[dict]:
+    """
+    Generate questions the graph is uniquely positioned to answer.
+    Based on: AMBIGUOUS edges, bridge nodes, underexplored god nodes, isolated nodes.
+    Each question has a 'type', 'question', and 'why' field.
+    """
+    if community_labels:
+        community_labels = {int(k) if isinstance(k, str) else k: v for k, v in community_labels.items()}
+
+    questions = []
+    node_community = _node_community_map(communities)
+
+    # 1. AMBIGUOUS edges → unresolved relationship questions
+    _handle_ambiguous_edges(G, questions)
+
+    # 2. Bridge nodes (high betweenness) → cross-cutting concern questions
+    _handle_bridge_nodes(G, node_community, community_labels, questions)
+
+    # 3. God nodes with many INFERRED edges → verification questions
+    _handle_god_nodes_inferred(G, node_community, questions)
+
+    # 4. Isolated or weakly-connected nodes → exploration questions
+    _handle_isolated_nodes(G, questions)
+
+    # 5. Low-cohesion communities → structural questions
+    _handle_low_cohesion_communities(G, communities, community_labels, questions)
 
     if not questions:
         return [{
