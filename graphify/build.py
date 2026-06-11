@@ -104,6 +104,38 @@ def edge_datas(G: nx.Graph, u: str, v: str) -> list[dict]:
     return [raw]
 
 
+def _is_cross_language_calls_edge(attrs: dict, G: nx.Graph, src: str, tgt: str) -> bool:
+    """Check if an edge is a cross-language INFERRED `calls` edge that should be dropped."""
+    if attrs.get("relation") != "calls" or attrs.get("confidence") != "INFERRED":
+        return False
+    
+    _LANG_FAMILY: dict[str, str] = {
+        ".py": "py", ".pyi": "py",
+        ".js": "js", ".mjs": "js", ".cjs": "js", ".jsx": "js",
+        ".ts": "js", ".tsx": "js",
+        ".go": "go", ".rs": "rs",
+        ".java": "jvm", ".kt": "jvm", ".scala": "jvm", ".groovy": "jvm",
+        ".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".hpp": "cpp",
+        ".rb": "rb", ".php": "php", ".cs": "cs", ".swift": "swift", ".lua": "lua",
+    }
+    src_ext = Path(G.nodes[src].get("source_file") or "").suffix.lower()
+    tgt_ext = Path(G.nodes[tgt].get("source_file") or "").suffix.lower()
+    if src_ext and tgt_ext and _LANG_FAMILY.get(src_ext) != _LANG_FAMILY.get(tgt_ext):
+        return True
+    return False
+
+
+def _should_drop_edge_due_to_direction_conflict(G: nx.Graph, src: str, tgt: str, attrs: dict) -> bool:
+    """Check if an edge should be dropped due to direction conflict in undirected graph."""
+    if not G.is_directed() and G.has_edge(src, tgt):
+        existing = edge_data(G, src, tgt)
+        if existing.get("relation") == attrs.get("relation") and (
+            existing.get("_src") == tgt and existing.get("_tgt") == src
+        ):
+            return True
+    return False
+
+
 def build_from_json(extraction: dict, *, directed: bool = False, root: str | Path | None = None) -> nx.Graph:
     """Build a NetworkX graph from an extraction dict.
 
@@ -235,20 +267,8 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
         # Drop cross-language INFERRED `calls` edges — same short names (render,
         # parse, etc.) appear across language boundaries in multi-language chunks,
         # producing phantom edges that don't represent real call relationships.
-        if attrs.get("relation") == "calls" and attrs.get("confidence") == "INFERRED":
-            _LANG_FAMILY: dict[str, str] = {
-                ".py": "py", ".pyi": "py",
-                ".js": "js", ".mjs": "js", ".cjs": "js", ".jsx": "js",
-                ".ts": "js", ".tsx": "js",
-                ".go": "go", ".rs": "rs",
-                ".java": "jvm", ".kt": "jvm", ".scala": "jvm", ".groovy": "jvm",
-                ".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".hpp": "cpp",
-                ".rb": "rb", ".php": "php", ".cs": "cs", ".swift": "swift", ".lua": "lua",
-            }
-            src_ext = Path(G.nodes[src].get("source_file") or "").suffix.lower()
-            tgt_ext = Path(G.nodes[tgt].get("source_file") or "").suffix.lower()
-            if src_ext and tgt_ext and _LANG_FAMILY.get(src_ext) != _LANG_FAMILY.get(tgt_ext):
-                continue
+        if _is_cross_language_calls_edge(attrs, G, src, tgt):
+            continue
         # Preserve original edge direction - undirected graphs lose it otherwise,
         # causing display functions to show edges backwards.
         attrs["_src"] = src
@@ -260,12 +280,8 @@ def build_from_json(extraction: dict, *, directed: bool = False, root: str | Pat
         # earlier one's _src/_tgt, silently flipping the surviving edge's caller
         # and callee. First-seen direction wins instead — drop the redundant
         # reverse-direction duplicate so the original direction is preserved (#1061).
-        if not G.is_directed() and G.has_edge(src, tgt):
-            existing = edge_data(G, src, tgt)
-            if existing.get("relation") == attrs.get("relation") and (
-                existing.get("_src") == tgt and existing.get("_tgt") == src
-            ):
-                continue
+        if _should_drop_edge_due_to_direction_conflict(G, src, tgt, attrs):
+            continue
         G.add_edge(src, tgt, **attrs)
     hyperedges = extraction.get("hyperedges", [])
     if hyperedges:
