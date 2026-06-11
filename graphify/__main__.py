@@ -674,7 +674,7 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
         if codebuddy_md.exists():
             content = codebuddy_md.read_text(encoding="utf-8")
             if "graphify" in content:
-                print(f"  CODEBUDDY.md     ->  already registered (no change)")
+                print("  CODEBUDDY.md     ->  already registered (no change)")
             else:
                 codebuddy_md.write_text(content.rstrip() + registration, encoding="utf-8")
                 print(f"  CODEBUDDY.md     ->  skill registered in {codebuddy_md}")
