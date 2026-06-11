@@ -97,6 +97,16 @@ def _is_json_key_node(G: nx.Graph, node_id: str) -> bool:
     return label in _JSON_NOISE_LABELS
 
 
+def _is_noise_node(G: nx.Graph, node_id: str) -> bool:
+    """Check if a node should be excluded from god nodes."""
+    return (
+        _is_file_node(G, node_id) or 
+        _is_concept_node(G, node_id) or 
+        _is_json_key_node(G, node_id) or
+        G.nodes[node_id].get("label", "") in _BUILTIN_NOISE_LABELS
+    )
+
+
 def god_nodes(G: nx.Graph, top_n: int = 10) -> list[dict]:
     """Return the top_n most-connected real entities - the core abstractions.
 
@@ -107,9 +117,7 @@ def god_nodes(G: nx.Graph, top_n: int = 10) -> list[dict]:
     sorted_nodes = sorted(degree.items(), key=lambda x: x[1], reverse=True)
     result = []
     for node_id, deg in sorted_nodes:
-        if _is_file_node(G, node_id) or _is_concept_node(G, node_id) or _is_json_key_node(G, node_id):
-            continue
-        if G.nodes[node_id].get("label", "") in _BUILTIN_NOISE_LABELS:
+        if _is_noise_node(G, node_id):
             continue
         result.append({
             "id": node_id,
