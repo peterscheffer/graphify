@@ -968,7 +968,7 @@ def _kiro_install(project_dir: Path) -> None:
     steering_dir.mkdir(parents=True, exist_ok=True)
     steering_dst = steering_dir / "graphify.md"
     if steering_dst.exists() and steering_dst.read_text(encoding="utf-8") == _always_on("kiro-steering"):
-        print(f"  .kiro/steering/graphify.md  ->  already configured (no change)")
+        print("  .kiro/steering/graphify.md  ->  already configured (no change)")
     else:
         # File is wholly graphify-owned. Overwrite on upgrade so older
         # report-first wording does not silently linger (issue #580).
