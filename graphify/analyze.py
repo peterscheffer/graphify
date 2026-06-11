@@ -416,6 +416,11 @@ def _cross_community_surprises(
     return deduped[:top_n]
 
 
+def _is_bridge_node(G: nx.Graph, node_id: str, node_community: dict[str, int], community_labels: dict[int, str]) -> bool:
+    """Check if a node is a bridge node that should be considered for questions."""
+    return not _is_file_node(G, node_id) and not _is_concept_node(G, node_id)
+
+
 def suggest_questions(
     G: nx.Graph,
     communities: dict[int, list[str]],
@@ -452,7 +457,7 @@ def suggest_questions(
         # Top bridge nodes that are NOT file-level hubs
         bridges = sorted(
             [(n, s) for n, s in betweenness.items()
-             if not _is_file_node(G, n) and not _is_concept_node(G, n) and s > 0],
+             if _is_bridge_node(G, n, node_community, community_labels) and s > 0],
             key=lambda x: x[1],
             reverse=True,
         )[:3]
