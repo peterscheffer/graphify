@@ -1819,7 +1819,7 @@ def _install_claude_hook(project_dir: Path) -> None:
     hooks["PreToolUse"].append(_SETTINGS_HOOK)
     hooks["PreToolUse"].append(_READ_SETTINGS_HOOK)
     settings_path.write_text(json.dumps(settings, indent=2), encoding="utf-8")
-    print(f"  .claude/settings.json  ->  PreToolUse hooks registered (Bash search + Read/Glob)")
+    print("  .claude/settings.json  ->  PreToolUse hooks registered (Bash search + Read/Glob)")
 
 
 def _uninstall_claude_hook(project_dir: Path) -> None:
