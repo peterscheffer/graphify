@@ -658,7 +658,7 @@ def install(platform: str = "claude", *, project: bool = False, project_dir: Pat
         if claude_md.exists():
             content = claude_md.read_text(encoding="utf-8")
             if "graphify" in content:
-                print(f"  CLAUDE.md        ->  already registered (no change)")
+                print("  CLAUDE.md        ->  already registered (no change)")
             else:
                 claude_md.write_text(content.rstrip() + registration, encoding="utf-8")
                 print(f"  CLAUDE.md        ->  skill registered in {claude_md}")
