@@ -1875,7 +1875,7 @@ def uninstall_all(project_dir: Path | None = None, purge: bool = False) -> None:
         out = pd / "graphify-out"
         if out.exists():
             _shutil.rmtree(out)
-            print(f"\n  graphify-out/  ->  deleted (--purge)")
+            print("\n  graphify-out/  ->  deleted (--purge)")
         else:
             print("\n  graphify-out/  ->  not found (nothing to purge)")
 
