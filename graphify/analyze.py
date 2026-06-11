@@ -529,6 +529,38 @@ def _handle_low_cohesion_communities(G: nx.Graph, communities: dict[int, list[st
             })
 
 
+def _get_community_labels(community_labels: dict[int, str]) -> dict[int, str]:
+    """Helper to process community labels."""
+    if community_labels:
+        return {int(k) if isinstance(k, str) else k: v for k, v in community_labels.items()}
+    return community_labels
+
+
+def _generate_ambiguous_edge_questions(G: nx.Graph, questions: list[dict]) -> None:
+    """Generate questions for AMBIGUOUS edges."""
+    _handle_ambiguous_edges(G, questions)
+
+
+def _generate_bridge_node_questions(G: nx.Graph, communities: dict[int, list[str]], community_labels: dict[int, str], questions: list[dict]) -> None:
+    """Generate questions for bridge nodes."""
+    _handle_bridge_nodes(G, communities, community_labels, questions)
+
+
+def _generate_god_node_inferred_questions(G: nx.Graph, communities: dict[int, list[str]], questions: list[dict]) -> None:
+    """Generate questions for god nodes with many INFERRED edges."""
+    _handle_god_nodes_inferred(G, communities, questions)
+
+
+def _generate_isolated_node_questions(G: nx.Graph, questions: list[dict]) -> None:
+    """Generate questions for isolated or weakly-connected nodes."""
+    _handle_isolated_nodes(G, questions)
+
+
+def _generate_low_cohesion_questions(G: nx.Graph, communities: dict[int, list[str]], community_labels: dict[int, str], questions: list[dict]) -> None:
+    """Generate questions for low-cohesion communities."""
+    _handle_low_cohesion_communities(G, communities, community_labels, questions)
+
+
 def suggest_questions(
     G: nx.Graph,
     communities: dict[int, list[str]],
@@ -540,26 +572,25 @@ def suggest_questions(
     Based on: AMBIGUOUS edges, bridge nodes, underexplored god nodes, isolated nodes.
     Each question has a 'type', 'question', and 'why' field.
     """
-    if community_labels:
-        community_labels = {int(k) if isinstance(k, str) else k: v for k, v in community_labels.items()}
+    community_labels = _get_community_labels(community_labels)
 
     questions = []
     node_community = _node_community_map(communities)
 
     # 1. AMBIGUOUS edges → unresolved relationship questions
-    _handle_ambiguous_edges(G, questions)
+    _generate_ambiguous_edge_questions(G, questions)
 
     # 2. Bridge nodes (high betweenness) → cross-cutting concern questions
-    _handle_bridge_nodes(G, node_community, community_labels, questions)
+    _generate_bridge_node_questions(G, node_community, community_labels, questions)
 
     # 3. God nodes with many INFERRED edges → verification questions
-    _handle_god_nodes_inferred(G, node_community, questions)
+    _generate_god_node_inferred_questions(G, node_community, questions)
 
     # 4. Isolated or weakly-connected nodes → exploration questions
-    _handle_isolated_nodes(G, questions)
+    _generate_isolated_node_questions(G, questions)
 
     # 5. Low-cohesion communities → structural questions
-    _handle_low_cohesion_communities(G, communities, community_labels, questions)
+    _generate_low_cohesion_questions(G, communities, community_labels, questions)
 
     if not questions:
         return [{
