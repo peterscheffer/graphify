@@ -1530,7 +1530,7 @@ def _uninstall_codex_hook(project_dir: Path) -> None:
     filtered = [h for h in pre_tool if "graphify" not in str(h)]
     existing["hooks"]["PreToolUse"] = filtered
     hooks_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
-    print(f"  .codex/hooks.json  ->  PreToolUse hook removed")
+    print("  .codex/hooks.json  ->  PreToolUse hook removed")
 
 
 def _agents_install(project_dir: Path, platform: str) -> None:
